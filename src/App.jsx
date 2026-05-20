@@ -2,13 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import {
   Eye, ArrowLeft, Fingerprint, ScanFace, Mic, ScanText,
   Search, Settings, LogOut, X, Check, Volume2, VolumeX,
-  ZoomIn, ZoomOut, Sun, Moon, Subtitles, Brain,
+  ZoomIn, ZoomOut, Sun, Subtitles, Brain,
   ChevronRight, Camera, Play, Square, RotateCcw
 } from "lucide-react";
 
-// ─────────────────────────────────────────
-//  DESIGN TOKENS
-// ─────────────────────────────────────────
 const C = {
   bg:       "#0b1120",
   phone:    "#111827",
@@ -64,9 +61,7 @@ const menuIcon = (color) => ({
   display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color
 });
 
-// ─────────────────────────────────────────
-//  SHARED COMPONENTS
-// ─────────────────────────────────────────
+// ── STATUS BAR ──
 function StatusBar({ title = "VisionAI" }) {
   const [time, setTime] = useState(new Date().toLocaleTimeString("es-PE", { hour:"2-digit", minute:"2-digit" }));
   useEffect(() => {
@@ -93,9 +88,7 @@ function SuccessScreen({ title, sub, btnLabel, onContinue, color = C.blue }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  SCREEN 1 — WELCOME
-// ─────────────────────────────────────────
+// ── SCREEN 1 — WELCOME ──
 function Welcome({ onLogin, onRegister }) {
   return (
     <div style={S.body}>
@@ -122,9 +115,7 @@ function Welcome({ onLogin, onRegister }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  SCREEN 2 — LOGIN
-// ─────────────────────────────────────────
+// ── SCREEN 2 — LOGIN ──
 function Login({ onBack, onSuccess }) {
   const [bio, setBio] = useState("huella");
   const [ok, setOk] = useState(false);
@@ -154,9 +145,7 @@ function Login({ onBack, onSuccess }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  SCREEN 3 — REGISTER
-// ─────────────────────────────────────────
+// ── SCREEN 3 — REGISTER ──
 function Register({ onBack }) {
   const [f, setF] = useState({ name:"", email:"", pass:"" });
   const [done, setDone] = useState(false);
@@ -180,9 +169,7 @@ function Register({ onBack }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  SCREEN 4 — DASHBOARD
-// ─────────────────────────────────────────
+// ── SCREEN 4 — DASHBOARD ──
 function Dashboard({ onNavigate, onLogout }) {
   const [showLogout, setShowLogout] = useState(false);
   const menu = [
@@ -235,60 +222,131 @@ function Dashboard({ onNavigate, onLogout }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  SCREEN 5 — SCANNER (OCR simulado)
-// ─────────────────────────────────────────
+// ── SCREEN 5 — SCANNER (OCR real con cámara) ──
 function Scanner({ onBack }) {
-  const [stage, setStage] = useState("idle"); // idle | scanning | result
+  const [stage, setStage] = useState("idle");
   const [fontSize, setFontSize] = useState(15);
   const [reading, setReading] = useState(false);
-  const sampleText = `Medicamento: Paracetamol 500mg\n\nDosis: Tomar 1 comprimido cada 8 horas con alimentos. No exceder 3 comprimidos por día.\n\nAlmacenar en lugar fresco y seco, fuera del alcance de los niños.`;
+  const [text, setText] = useState("");
+  const [progress, setProgress] = useState(0);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
 
-  const speak = (text) => {
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setStage("camera");
+    } catch (err) {
+      alert("No se pudo acceder a la cámara. Verifica los permisos del navegador.");
+    }
+  };
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+  };
+
+  const capture = async () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    stopCamera();
+    setStage("scanning");
+    setProgress(0);
+    try {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker("spa", 1, {
+        logger: m => {
+          if (m.status === "recognizing text") {
+            setProgress(Math.round(m.progress * 100));
+          }
+        }
+      });
+      const { data: { text: result } } = await worker.recognize(canvas);
+      await worker.terminate();
+      setText(result.trim() || "No se detectó texto claro. Intenta con mejor iluminación.");
+    } catch (e) {
+      setText("Error al procesar la imagen. Intenta de nuevo.");
+    }
+    setStage("result");
+  };
+
+  const speak = (t) => {
     if (!window.speechSynthesis) return;
-    const u = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
     u.lang = "es-PE";
     u.onend = () => setReading(false);
-    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
     setReading(true);
   };
 
   return (
     <div style={S.body}>
-      <button style={S.back} onClick={onBack}><ArrowLeft size={15}/> Volver</button>
+      <button style={S.back} onClick={() => { stopCamera(); onBack(); }}>
+        <ArrowLeft size={15}/> Volver
+      </button>
       <div style={S.sectionTitle}>Escanear Texto</div>
       <div style={S.sectionSub}>Apunta la cámara al texto a leer</div>
 
-      {/* Visor de cámara simulado */}
-      <div style={{ width:"100%", height:"160px", borderRadius:"16px", background:"#0d1525", border:`2px dashed ${stage==="scanning"?C.blue:C.border}`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
-        {stage === "idle" && <div style={{ textAlign:"center", color:C.textMuted }}>
-          <Camera size={32} style={{ margin:"0 auto 8px" }}/>
-          <div style={{ fontSize:"12px" }}>Presiona Escanear para activar</div>
-        </div>}
-        {stage === "scanning" && (
-          <>
-            <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom, transparent 40%, rgba(14,165,233,0.05) 100%)" }}/>
-            <div style={{ width:"80%", height:"2px", background:C.blue, position:"absolute", animation:"none", opacity:0.7 }}/>
-            <div style={{ textAlign:"center", color:C.blue }}>
-              <div style={{ fontSize:"12px" }}>Escaneando...</div>
-            </div>
-          </>
+      <div style={{ width:"100%", height:"180px", borderRadius:"16px", background:"#0d1525", border:`2px solid ${stage==="camera"?C.blue:C.border}`, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
+        <video ref={videoRef} style={{ width:"100%", height:"100%", objectFit:"cover", display: stage==="camera"?"block":"none" }} playsInline muted />
+        <canvas ref={canvasRef} style={{ display:"none" }} />
+        {stage === "idle" && (
+          <div style={{ textAlign:"center", color:C.textMuted }}>
+            <Camera size={32} style={{ margin:"0 auto 8px" }}/>
+            <div style={{ fontSize:"12px" }}>Presiona Activar Cámara</div>
+          </div>
         )}
-        {stage === "result" && <div style={{ fontSize:"11px", color:C.green, textAlign:"center" }}>✓ Texto detectado</div>}
+        {stage === "scanning" && (
+          <div style={{ textAlign:"center", color:C.blue }}>
+            <div style={{ fontSize:"28px", marginBottom:"8px" }}>🔍</div>
+            <div style={{ fontSize:"13px", fontWeight:"600" }}>Leyendo texto... {progress}%</div>
+            <div style={{ width:"120px", height:"4px", background:"#1e3a5f", borderRadius:"2px", margin:"8px auto 0" }}>
+              <div style={{ width:`${progress}%`, height:"100%", background:C.blue, borderRadius:"2px", transition:"width 0.3s" }}/>
+            </div>
+          </div>
+        )}
+        {stage === "result" && (
+          <div style={{ textAlign:"center", color:C.green }}>
+            <div style={{ fontSize:"24px" }}>✓</div>
+            <div style={{ fontSize:"12px" }}>Texto detectado</div>
+          </div>
+        )}
       </div>
 
-      {/* Controles */}
       <div style={{ display:"flex", gap:"10px", width:"100%" }}>
-        {stage !== "result" ? (
-          <button style={{ ...S.btn, background:`linear-gradient(135deg,${C.blue},#0369a1)` }}
-            onClick={()=>{ setStage("scanning"); setTimeout(()=>setStage("result"), 2000); }}>
+        {stage === "idle" && (
+          <button style={S.btn} onClick={startCamera}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
-              <ScanText size={16}/> Escanear
+              <Camera size={15}/> Activar cámara
             </div>
           </button>
-        ) : (
-          <button style={{ ...S.btn, background:"#1a2235", color:C.textSub, border:`1px solid ${C.border}` }} onClick={()=>setStage("idle")}>
+        )}
+        {stage === "camera" && (
+          <>
+            <button style={{ ...S.btn, background:`linear-gradient(135deg,${C.green},#059669)` }} onClick={capture}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+                <ScanText size={15}/> Escanear ahora
+              </div>
+            </button>
+            <button style={{ ...S.btnOut, width:"auto", padding:"15px 18px" }} onClick={()=>{ stopCamera(); setStage("idle"); }}>
+              <X size={15}/>
+            </button>
+          </>
+        )}
+        {stage === "result" && (
+          <button style={S.btnOut} onClick={() => { setText(""); setStage("idle"); }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
               <RotateCcw size={14}/> Nuevo escaneo
             </div>
@@ -296,21 +354,20 @@ function Scanner({ onBack }) {
         )}
       </div>
 
-      {/* Resultado */}
-      {stage === "result" && (
+      {stage === "result" && text && (
         <>
-          <div style={{ ...S.card, display:"flex", flexDirection:"column", gap:"10px" }}>
+          <div style={{ ...S.card, display:"flex", flexDirection:"column", gap:"10px", width:"100%" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <span style={{ fontSize:"11px", color:C.textMuted }}>Texto detectado:</span>
               <div style={{ display:"flex", gap:"6px" }}>
-                <button style={{ background:C.surface, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:"8px", padding:"4px 8px", cursor:"pointer", fontSize:"12px" }} onClick={()=>setFontSize(f=>Math.max(11,f-1))}><ZoomOut size={12}/></button>
-                <button style={{ background:C.surface, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:"8px", padding:"4px 8px", cursor:"pointer", fontSize:"12px" }} onClick={()=>setFontSize(f=>Math.min(22,f+1))}><ZoomIn size={12}/></button>
+                <button style={{ background:C.surface, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:"8px", padding:"4px 8px", cursor:"pointer" }} onClick={()=>setFontSize(f=>Math.max(11,f-1))}><ZoomOut size={12}/></button>
+                <button style={{ background:C.surface, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:"8px", padding:"4px 8px", cursor:"pointer" }} onClick={()=>setFontSize(f=>Math.min(22,f+1))}><ZoomIn size={12}/></button>
               </div>
             </div>
-            <p style={{ fontSize:`${fontSize}px`, color:C.textPrimary, lineHeight:"1.7", margin:0, whiteSpace:"pre-line" }}>{sampleText}</p>
+            <p style={{ fontSize:`${fontSize}px`, color:C.textPrimary, lineHeight:"1.7", margin:0, whiteSpace:"pre-line" }}>{text}</p>
           </div>
-          <button style={{ ...S.btn, background: reading ? `rgba(14,165,233,0.15)` : `linear-gradient(135deg,${C.blue},#0369a1)`, border: reading ? `1.5px solid ${C.blue}` : "none", color: reading ? C.blue : "#fff" }}
-            onClick={()=>{ if(reading){ window.speechSynthesis.cancel(); setReading(false); } else speak(sampleText); }}>
+          <button style={{ ...S.btn, background: reading?"rgba(14,165,233,0.15)":`linear-gradient(135deg,${C.blue},#0369a1)`, border: reading?`1.5px solid ${C.blue}`:"none", color: reading?C.blue:"#fff" }}
+            onClick={()=>{ if(reading){ window.speechSynthesis.cancel(); setReading(false); } else speak(text); }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
               {reading ? <><VolumeX size={16}/> Detener lectura</> : <><Volume2 size={16}/> Escuchar contenido</>}
             </div>
@@ -321,16 +378,14 @@ function Scanner({ onBack }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  SCREEN 6 — RECONOCER OBJETOS
-// ─────────────────────────────────────────
+// ── SCREEN 6 — RECONOCER OBJETOS ──
 function Objects({ onBack }) {
   const [detecting, setDetecting] = useState(false);
   const [result, setResult] = useState(null);
   const objects = [
     { label:"Silla de ruedas", conf:97, color:C.green },
     { label:"Señal de salida", conf:94, color:C.blue },
-    { label:"Persona", conf:89, color:C.purple },
+    { label:"Persona",         conf:89, color:C.purple },
   ];
   const detect = () => {
     setDetecting(true);
@@ -342,7 +397,6 @@ function Objects({ onBack }) {
       <button style={S.back} onClick={onBack}><ArrowLeft size={15}/> Volver</button>
       <div style={S.sectionTitle}>Reconocer Objetos</div>
       <div style={S.sectionSub}>Identificación en tiempo real</div>
-
       <div style={{ width:"100%", height:"170px", borderRadius:"16px", background:"#0d1525", border:`2px dashed ${detecting?C.purple:C.border}`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
         {!detecting && !result && <div style={{ textAlign:"center", color:C.textMuted }}>
           <Camera size={32} style={{ margin:"0 auto 8px" }}/>
@@ -357,13 +411,11 @@ function Objects({ onBack }) {
           <div style={{ fontSize:"11px" }}>{result.length} objetos detectados</div>
         </div>}
       </div>
-
       <button style={{ ...S.btn, background:`linear-gradient(135deg,${C.green},#059669)` }} onClick={detect} disabled={detecting}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
           {detecting ? <><Square size={14}/> Analizando...</> : <><Play size={14}/> Detectar objetos</>}
         </div>
       </button>
-
       {result && (
         <div style={{ width:"100%", display:"flex", flexDirection:"column", gap:"8px" }}>
           <div style={{ fontSize:"12px", color:C.textMuted }}>Objetos identificados:</div>
@@ -384,9 +436,7 @@ function Objects({ onBack }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  SCREEN 7 — ASISTENTE DE VOZ
-// ─────────────────────────────────────────
+// ── SCREEN 7 — ASISTENTE DE VOZ ──
 function VoiceAssistant({ onBack }) {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -394,17 +444,17 @@ function VoiceAssistant({ onBack }) {
   const recRef = useRef(null);
 
   const fakeResponses = {
-    "hora": "Son las " + new Date().toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"}),
-    "fecha": "Hoy es " + new Date().toLocaleDateString("es-PE",{weekday:"long",day:"numeric",month:"long"}),
-    "hola": "Hola, estoy aquí para ayudarte. ¿Qué necesitas?",
-    "ayuda": "Puedes pedirme que lea textos, identifique objetos, o te diga la hora.",
+    "hora":    "Son las " + new Date().toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"}),
+    "fecha":   "Hoy es " + new Date().toLocaleDateString("es-PE",{weekday:"long",day:"numeric",month:"long"}),
+    "hola":    "Hola, estoy aquí para ayudarte. ¿Qué necesitas?",
+    "ayuda":   "Puedes pedirme que lea textos, identifique objetos, o te diga la hora.",
     "gracias": "De nada, es un placer ayudarte.",
   };
 
   const handleListen = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      setTranscript("(simulado: di 'hola')");
+      setTranscript("(simulado)");
       const r = "Hola, estoy aquí para ayudarte. ¿Qué necesitas?";
       setResponse(r);
       const u = new SpeechSynthesisUtterance(r); u.lang="es-PE"; window.speechSynthesis.speak(u);
@@ -434,15 +484,12 @@ function VoiceAssistant({ onBack }) {
       <button style={S.back} onClick={onBack}><ArrowLeft size={15}/> Volver</button>
       <div style={S.sectionTitle}>Asistente de Voz</div>
       <div style={S.sectionSub}>Habla para navegar la app</div>
-
-      {/* Orb */}
-      <div style={{ width:"120px", height:"120px", borderRadius:"50%", background: listening ? `rgba(124,58,237,0.2)` : "rgba(14,165,233,0.1)", border:`3px solid ${listening ? C.purple : C.blue}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all 0.3s", boxShadow: listening ? `0 0 40px rgba(124,58,237,0.3)` : "none" }} onClick={handleListen}>
-        <Mic size={44} color={listening ? C.purple : C.blue}/>
+      <div style={{ width:"120px", height:"120px", borderRadius:"50%", background: listening?"rgba(124,58,237,0.2)":"rgba(14,165,233,0.1)", border:`3px solid ${listening?C.purple:C.blue}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all 0.3s", boxShadow: listening?`0 0 40px rgba(124,58,237,0.3)`:"none" }} onClick={handleListen}>
+        <Mic size={44} color={listening?C.purple:C.blue}/>
       </div>
-      <div style={{ fontSize:"13px", color: listening ? C.purple : C.textMuted, fontWeight: listening ? "600" : "400" }}>
+      <div style={{ fontSize:"13px", color: listening?C.purple:C.textMuted, fontWeight: listening?"600":"400" }}>
         {listening ? "Escuchando..." : "Toca el micrófono"}
       </div>
-
       {transcript && (
         <div style={{ ...S.card, width:"100%" }}>
           <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"6px" }}>Tú dijiste:</div>
@@ -455,11 +502,17 @@ function VoiceAssistant({ onBack }) {
           <div style={{ fontSize:"14px", color:C.textPrimary }}>{response}</div>
         </div>
       )}
-
       <div style={{ width:"100%", display:"flex", flexDirection:"column", gap:"6px" }}>
         <div style={{ fontSize:"11px", color:C.textMuted }}>Comandos sugeridos:</div>
         {["¿Qué hora es?","¿Qué fecha es?","Ayuda"].map(cmd=>(
-          <button key={cmd} style={{ ...S.card, cursor:"pointer", fontSize:"13px", color:C.textSub, display:"flex", alignItems:"center", gap:"8px" }} onClick={()=>{ setTranscript(cmd.toLowerCase()); const key=Object.keys(fakeResponses).find(k=>cmd.toLowerCase().includes(k)); const r=key?fakeResponses[key]:`Dijiste: "${cmd}"`; setResponse(r); const u=new SpeechSynthesisUtterance(r); u.lang="es-PE"; window.speechSynthesis.speak(u); }}>
+          <button key={cmd} style={{ ...S.card, cursor:"pointer", fontSize:"13px", color:C.textSub, display:"flex", alignItems:"center", gap:"8px" }}
+            onClick={()=>{
+              setTranscript(cmd.toLowerCase());
+              const key=Object.keys(fakeResponses).find(k=>cmd.toLowerCase().includes(k));
+              const r=key?fakeResponses[key]:`Dijiste: "${cmd}"`;
+              setResponse(r);
+              const u=new SpeechSynthesisUtterance(r); u.lang="es-PE"; window.speechSynthesis.speak(u);
+            }}>
             <Mic size={12} color={C.blue}/> {cmd}
           </button>
         ))}
@@ -468,9 +521,7 @@ function VoiceAssistant({ onBack }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  SCREEN 8 — CONFIGURACIÓN ACCESIBILIDAD
-// ─────────────────────────────────────────
+// ── SCREEN 8 — CONFIGURACIÓN ──
 function SettingsScreen({ onBack, settings, setSettings }) {
   const toggle = (key) => setSettings(s=>({...s,[key]:!s[key]}));
   const Row = ({ icon, label, desc, skey, color=C.blue }) => (
@@ -480,19 +531,16 @@ function SettingsScreen({ onBack, settings, setSettings }) {
         <div style={{ fontSize:"13px", fontWeight:"600", color:C.textPrimary }}>{label}</div>
         <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"2px" }}>{desc}</div>
       </div>
-      <button onClick={()=>toggle(skey)} style={{ width:"44px", height:"24px", borderRadius:"12px", background: settings[skey] ? C.blue : "#334155", border:"none", cursor:"pointer", position:"relative", transition:"background 0.2s" }}>
-        <div style={{ width:"18px", height:"18px", borderRadius:"50%", background:"#fff", position:"absolute", top:"3px", left: settings[skey] ? "23px" : "3px", transition:"left 0.2s" }}/>
+      <button onClick={()=>toggle(skey)} style={{ width:"44px", height:"24px", borderRadius:"12px", background: settings[skey]?C.blue:"#334155", border:"none", cursor:"pointer", position:"relative", transition:"background 0.2s" }}>
+        <div style={{ width:"18px", height:"18px", borderRadius:"50%", background:"#fff", position:"absolute", top:"3px", left: settings[skey]?"23px":"3px", transition:"left 0.2s" }}/>
       </button>
     </div>
   );
-
   return (
     <div style={{ ...S.body, justifyContent:"flex-start", paddingTop:"24px" }}>
       <button style={S.back} onClick={onBack}><ArrowLeft size={15}/> Volver</button>
       <div style={S.sectionTitle}>Configuración</div>
       <div style={S.sectionSub}>Personaliza tu accesibilidad</div>
-
-      {/* Tamaño de fuente */}
       <div style={{ ...S.card, width:"100%" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
           <div>
@@ -503,18 +551,15 @@ function SettingsScreen({ onBack, settings, setSettings }) {
         </div>
         <div style={{ display:"flex", gap:"8px" }}>
           {[12,15,18,22].map(sz=>(
-            <button key={sz} style={{ flex:1, padding:"10px 0", borderRadius:"10px", background: settings.fontSize===sz ? C.blue : C.surface, border:`1.5px solid ${settings.fontSize===sz?C.blue:C.border}`, color: settings.fontSize===sz?"#fff":C.textMuted, fontSize:`${sz}px`, cursor:"pointer", fontWeight:"600" }} onClick={()=>setSettings(s=>({...s,fontSize:sz}))}>A</button>
+            <button key={sz} style={{ flex:1, padding:"10px 0", borderRadius:"10px", background: settings.fontSize===sz?C.blue:C.surface, border:`1.5px solid ${settings.fontSize===sz?C.blue:C.border}`, color: settings.fontSize===sz?"#fff":C.textMuted, fontSize:`${sz}px`, cursor:"pointer", fontWeight:"600" }} onClick={()=>setSettings(s=>({...s,fontSize:sz}))}>A</button>
           ))}
         </div>
       </div>
-
-      <Row icon={<Sun size={18}/>}      label="Alto contraste"       desc="Aumenta el contraste visual"      skey="highContrast" color={C.amber} />
-      <Row icon={<Volume2 size={18}/>}  label="Lectura automática"   desc="Lee el contenido al abrirlo"      skey="autoRead"    color={C.blue}  />
-      <Row icon={<Subtitles size={18}/>}label="Subtítulos automáticos" desc="Para videos y audio"            skey="subtitles"   color={C.green} />
-      <Row icon={<Brain size={18}/>}    label="Modo cognitivo simple" desc="Interfaz simplificada"           skey="simpleMode"  color={C.purple}/>
-      <Row icon={<Mic size={18}/>}      label="Navegación por voz"   desc="Activa comandos de voz globales"  skey="voiceNav"    color={C.red}   />
-
-      {/* Preview de modo cognitivo */}
+      <Row icon={<Sun size={18}/>}        label="Alto contraste"          desc="Aumenta el contraste visual"       skey="highContrast" color={C.amber}  />
+      <Row icon={<Volume2 size={18}/>}    label="Lectura automática"      desc="Lee el contenido al abrirlo"       skey="autoRead"     color={C.blue}   />
+      <Row icon={<Subtitles size={18}/>}  label="Subtítulos automáticos"  desc="Para videos y audio"               skey="subtitles"    color={C.green}  />
+      <Row icon={<Brain size={18}/>}      label="Modo cognitivo simple"   desc="Interfaz simplificada"             skey="simpleMode"   color={C.purple} />
+      <Row icon={<Mic size={18}/>}        label="Navegación por voz"      desc="Activa comandos de voz globales"   skey="voiceNav"     color={C.red}    />
       {settings.simpleMode && (
         <div style={{ width:"100%", padding:"16px", borderRadius:"14px", background:"rgba(124,58,237,0.1)", border:`1.5px solid ${C.purple}44` }}>
           <div style={{ fontSize:"13px", color:C.purple, fontWeight:"600", marginBottom:"6px" }}>Modo simple activo</div>
@@ -525,16 +570,13 @@ function SettingsScreen({ onBack, settings, setSettings }) {
   );
 }
 
-// ─────────────────────────────────────────
-//  APP ROOT
-// ─────────────────────────────────────────
+// ── APP ROOT ──
 const defaultSettings = { fontSize:15, highContrast:false, autoRead:false, subtitles:false, simpleMode:false, voiceNav:false };
 
 export default function App() {
   const [screen, setScreen] = useState("welcome");
   const [settings, setSettings] = useState(defaultSettings);
 
-  // Aplicar alto contraste al body
   useEffect(() => {
     document.body.style.filter = settings.highContrast ? "contrast(1.3) brightness(1.1)" : "none";
   }, [settings.highContrast]);
@@ -545,14 +587,14 @@ export default function App() {
     <div style={S.wrap}>
       <div style={S.phone}>
         <StatusBar />
-        {screen === "welcome"  && <Welcome   onLogin={()=>nav("login")} onRegister={()=>nav("register")} />}
-        {screen === "login"    && <Login     onBack={()=>nav("welcome")} onSuccess={()=>nav("dashboard")} />}
-        {screen === "register" && <Register  onBack={()=>nav("welcome")} />}
-        {screen === "dashboard"&& <Dashboard onNavigate={nav} onLogout={()=>nav("welcome")} />}
-        {screen === "scanner"  && <Scanner   onBack={()=>nav("dashboard")} />}
-        {screen === "objects"  && <Objects   onBack={()=>nav("dashboard")} />}
-        {screen === "voice"    && <VoiceAssistant onBack={()=>nav("dashboard")} />}
-        {screen === "settings" && <SettingsScreen onBack={()=>nav("dashboard")} settings={settings} setSettings={setSettings} />}
+        {screen === "welcome"   && <Welcome   onLogin={()=>nav("login")} onRegister={()=>nav("register")} />}
+        {screen === "login"     && <Login     onBack={()=>nav("welcome")} onSuccess={()=>nav("dashboard")} />}
+        {screen === "register"  && <Register  onBack={()=>nav("welcome")} />}
+        {screen === "dashboard" && <Dashboard onNavigate={nav} onLogout={()=>nav("welcome")} />}
+        {screen === "scanner"   && <Scanner   onBack={()=>nav("dashboard")} />}
+        {screen === "objects"   && <Objects   onBack={()=>nav("dashboard")} />}
+        {screen === "voice"     && <VoiceAssistant onBack={()=>nav("dashboard")} />}
+        {screen === "settings"  && <SettingsScreen onBack={()=>nav("dashboard")} settings={settings} setSettings={setSettings} />}
       </div>
     </div>
   );
