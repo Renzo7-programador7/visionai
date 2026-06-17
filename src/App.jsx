@@ -8,7 +8,6 @@ import {
   FileText, Accessibility
 } from "lucide-react";
 
-// ── BREAKPOINT ──
 function useBreakpoint() {
   const get = () => window.innerWidth >= 1024 ? "desktop" : window.innerWidth >= 768 ? "tablet" : "mobile";
   const [bp, setBp] = useState(get);
@@ -38,7 +37,6 @@ const mkBtnOut = (extra={}) => ({ width:"100%", padding:"15px", borderRadius:"14
 const mkBio    = (a) => ({ flex:1, padding:"12px", borderRadius:"12px", background:a?`rgba(14,165,233,0.15)`:C.surface, border:`1.5px solid ${a?C.blue:C.border}`, color:a?C.blue:C.textMuted, cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"5px", fontSize:"11px" });
 const mkIcon   = (color, sz=44) => ({ width:sz, height:sz, borderRadius:"12px", background:`${color}18`, border:`1.5px solid ${color}44`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color });
 
-// ── HELPERS ──
 function StatusBar({ title="VisionAI" }) {
   const [t,setT] = useState(new Date().toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"}));
   useEffect(()=>{ const i=setInterval(()=>setT(new Date().toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"})),10000); return()=>clearInterval(i); },[]);
@@ -56,7 +54,6 @@ function Success({ title, sub, label, onContinue, color=C.blue }) {
   );
 }
 
-// ── SIDEBAR ──
 const NAV = [
   { key:"dashboard",  icon:<Eye size={20}/>,           label:"Inicio"            },
   { key:"reading",    icon:<BookOpen size={20}/>,       label:"Lectura Accesible" },
@@ -99,7 +96,7 @@ function Sidebar({ screen, onNavigate, onLogout, bp }) {
   );
 }
 
-const TITLES = { welcome:"VisionAI",login:"Iniciar sesión",register:"Registro",dashboard:"Panel principal",reading:"Lectura Accesible",voice2text:"Voz a Texto",scanner:"Escanear Texto",objects:"Reconocer Objetos",multimedia:"Multimedia",access:"Accesibilidad",help:"Ayuda",voice:"Asistente de Voz",settings:"Configuración" };
+const TITLES = { welcome:"VisionAI",login:"Iniciar sesión",register:"Registro",dashboard:"Panel principal",reading:"Lectura Accesible",voice2text:"Voz a Texto",scanner:"Escanear Texto",objects:"Reconocer Objetos",multimedia:"Multimedia",access:"Accesibilidad",help:"Ayuda" };
 
 function TopBar({ screen, bp }) {
   const colors = { tablet:C.purple, desktop:C.blue };
@@ -115,7 +112,6 @@ function TopBar({ screen, bp }) {
   );
 }
 
-// ── PANTALLA BIENVENIDA ──
 function Welcome({ onLogin, onRegister, bp }) {
   const isMobile = bp==="mobile";
   const instructions = ["Toca un módulo para comenzar","Usa botones grandes para navegar","Activa la voz para comandos","Personaliza en Accesibilidad"];
@@ -187,7 +183,6 @@ function Welcome({ onLogin, onRegister, bp }) {
   );
 }
 
-// ── LOGIN ──
 function Login({ onBack, onSuccess, bp }) {
   const [bio,setBio] = useState("huella");
   const [ok,setOk]   = useState(false);
@@ -197,7 +192,7 @@ function Login({ onBack, onSuccess, bp }) {
       <div><div style={S.label}>📧 Correo electrónico</div><input style={S.input} placeholder="Diga su correo electrónico"/></div>
       <div><div style={S.label}>🔒 Contraseña</div><input style={S.input} type="password" placeholder="Diga su contraseña"/></div>
       <div style={{ display:"flex",gap:10 }}>
-        {[{k:"huella",l:"Huella",i:<Fingerprint size={20}/>},{k:"face",l:"Facial",i:<ScanFace size={20}/>},{k:"voz",l:"Voz",i:<Mic size={20}/>}].map(b=><button key={b.k} style={mkBio(bio===b.k)} onClick={()=>setBio(b.k)}>{b.i}<span>{b.l}</span></button>)}
+        {[{k:"huella",l:"Huella",i:<Fingerprint size={20}/>},{k:"face",l:"Facial",i:<ScanFace size={20}/>},{k:"voz",l:"Voz",i:<Mic size={20}/>}].map(b=>(<button key={b.k} style={mkBio(bio===b.k)} onClick={()=>{ setBio(b.k); const msg=b.k==="huella"?"Huella digital seleccionada":b.k==="face"?"Reconocimiento facial seleccionado":"Reconocimiento de voz seleccionado"; const u=new SpeechSynthesisUtterance(msg); u.lang="es-PE"; window.speechSynthesis.speak(u); }}>{b.i}<span>{b.l}</span></button>))}
       </div>
     </>
   );
@@ -234,9 +229,8 @@ function Login({ onBack, onSuccess, bp }) {
   );
 }
 
-// ── REGISTER ──
 function Register({ onBack, bp }) {
-  const [f,setF]     = useState({ name:"",email:"",pass:"" });
+  const [f,setF] = useState({ name:"",email:"",pass:"" });
   const [done,setDone] = useState(false);
   const ok = f.name&&f.email&&f.pass.length>=8;
   if (done) return <Success title="Cuenta creada" sub="Registro exitoso" label="Ir al inicio →" onContinue={onBack}/>;
@@ -259,7 +253,6 @@ function Register({ onBack, bp }) {
   );
 }
 
-// ── DASHBOARD ──
 function Dashboard({ onNavigate, onLogout, bp }) {
   const [showLogout,setShowLogout] = useState(false);
   const menu = [
@@ -267,7 +260,7 @@ function Dashboard({ onNavigate, onLogout, bp }) {
     { key:"voice2text", icon:<FileText size={24}/>,      label:"Voz a Texto",        desc:"Habla y convierte a texto automático",   color:C.purple },
     { key:"scanner",    icon:<ScanText size={24}/>,      label:"Escanear Texto",     desc:"Lee textos con la cámara (OCR)",         color:C.teal   },
     { key:"objects",    icon:<Search size={24}/>,        label:"Reconocer Objetos",  desc:"Identifica objetos en tiempo real",      color:C.green  },
-    { key:"multimedia", icon:<Video size={24}/>,         label:"Multimedia",         desc:"Audio, video y subtítulos accesibles",   color:C.orange },
+    { key:"multimedia", icon:<Video size={24}/>,         label:"Multimedia",         desc:"Video de YouTube con subtítulos",        color:C.orange },
     { key:"access",     icon:<Accessibility size={24}/>, label:"Accesibilidad",      desc:"Contraste, letra y modo simplificado",   color:C.amber  },
     { key:"help",       icon:<HelpCircle size={24}/>,    label:"Ayuda",              desc:"Guía rápida e indicaciones por voz",     color:C.pink   },
   ];
@@ -346,7 +339,6 @@ function Dashboard({ onNavigate, onLogout, bp }) {
   );
 }
 
-// ── MÓDULO LECTURA ACCESIBLE ──
 function Reading({ onBack, bp }) {
   const [text,setText]     = useState("");
   const [speed,setSpeed]   = useState(1);
@@ -367,7 +359,6 @@ function Reading({ onBack, bp }) {
   const pause  = () => { window.speechSynthesis.pause();  setPaused(true); };
   const resume = () => { window.speechSynthesis.resume(); setPaused(false); };
   const stop   = () => { window.speechSynthesis.cancel(); setReading(false);setPaused(false); };
-
   const speedLabels = { 0.5:"Muy lenta",0.75:"Lenta",1:"Normal",1.25:"Rápida",1.5:"Muy rápida" };
   const isWide = bp!=="mobile";
 
@@ -395,7 +386,7 @@ function Reading({ onBack, bp }) {
             </>
         }
       </div>
-      {reading&&<div style={{ background:"rgba(14,165,233,0.08)",border:`1px solid ${C.blue}33`,borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:10 }}><div style={{ width:8,height:8,borderRadius:"50%",background:paused?C.amber:C.blue,animation:paused?"none":"pulse 1s infinite" }}/><span style={{ fontSize:12,color:C.blue }}>{paused?"Lectura pausada...":"Leyendo en voz alta..."}</span></div>}
+      {reading&&<div style={{ background:"rgba(14,165,233,0.08)",border:`1px solid ${C.blue}33`,borderRadius:"12px",padding:"12px 16px",display:"flex",alignItems:"center",gap:10 }}><div style={{ width:8,height:8,borderRadius:"50%",background:paused?C.amber:C.blue }}/><span style={{ fontSize:12,color:C.blue }}>{paused?"Lectura pausada...":"Leyendo en voz alta..."}</span></div>}
     </div>
   );
 
@@ -408,7 +399,7 @@ function Reading({ onBack, bp }) {
         <textarea style={S.textarea} placeholder="Escribe o pega el texto aquí..." value={text} onChange={e=>setText(e.target.value)}/>
         <div style={{ display:"flex",gap:8 }}>
           <button style={{ ...mkBtnOut(),width:"auto",padding:"10px 16px",fontSize:12 }} onClick={()=>setText("")}><X size={13}/> Limpiar</button>
-          <button style={{ ...mkBtnOut(),width:"auto",padding:"10px 16px",fontSize:12 }} onClick={()=>setText("Ejemplo: El sistema de accesibilidad VisionAI permite a personas con discapacidad visual interactuar con contenido digital de forma independiente y eficiente.")}>Texto de ejemplo</button>
+          <button style={{ ...mkBtnOut(),width:"auto",padding:"10px 16px",fontSize:12 }} onClick={()=>setText("El sistema VisionAI permite a personas con discapacidad visual interactuar con contenido digital de forma independiente y eficiente.")}>Texto de ejemplo</button>
         </div>
       </div>
       <div style={{ width:isWide?320:undefined,flexShrink:0,display:"flex",flexDirection:"column",gap:14,paddingTop:isWide?54:0 }}>
@@ -422,7 +413,6 @@ function Reading({ onBack, bp }) {
   );
 }
 
-// ── MÓDULO VOZ A TEXTO ──
 function Voice2Text({ onBack, bp }) {
   const [listening,setListening] = useState(false);
   const [transcript,setTranscript] = useState("");
@@ -442,7 +432,7 @@ function Voice2Text({ onBack, bp }) {
     rec.start(); setListening(true); setConfirmed(false);
   };
   const stopListen = () => { recRef.current?.stop(); setListening(false); };
-  const confirm = () => { setConfirmed(true); window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance("Texto guardado correctamente"); u.lang="es-PE"; window.speechSynthesis.speak(u); };
+  const confirm = () => { setConfirmed(true); const u=new SpeechSynthesisUtterance("Texto guardado correctamente"); u.lang="es-PE"; window.speechSynthesis.speak(u); };
 
   return (
     <div style={{ flex:1,display:"flex",padding:isWide?(bp==="desktop"?"32px 40px":"28px 24px"):"24px",gap:isWide?28:0,flexDirection:isWide?"row":"column",overflowY:"auto",maxWidth:bp==="desktop"?1000:undefined,width:"100%" }}>
@@ -451,17 +441,13 @@ function Voice2Text({ onBack, bp }) {
         <div style={{ width:isWide?160:130,height:isWide?160:130,borderRadius:"50%",background:listening?"rgba(124,58,237,0.2)":"rgba(14,165,233,0.1)",border:`3px solid ${listening?C.purple:C.blue}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all 0.3s",boxShadow:listening?`0 0 40px rgba(124,58,237,0.3)`:"none" }} onClick={listening?stopListen:startListen}>
           {listening?<MicOff size={isWide?52:44} color={C.purple}/>:<Mic size={isWide?52:44} color={C.blue}/>}
         </div>
-        <div style={{ fontSize:14,color:listening?C.purple:C.textMuted,fontWeight:listening?"600":"400",textAlign:"center" }}>{listening?"🔴 Escuchando... (toca para detener)":"Toca el micrófono para hablar"}</div>
-        {listening&&<div style={{ display:"flex",gap:4 }}>{[0,1,2,3,4].map(i=><div key={i} style={{ width:4,height:16+Math.random()*16,borderRadius:2,background:C.purple,animation:`wave ${0.5+i*0.1}s ease-in-out infinite alternate` }}/>)}</div>}
+        <div style={{ fontSize:14,color:listening?C.purple:C.textMuted,fontWeight:listening?"600":"400",textAlign:"center" }}>{listening?"🔴 Escuchando...":"Toca el micrófono"}</div>
       </div>
       <div style={{ flex:1,display:"flex",flexDirection:"column",gap:14 }}>
         <div style={{ fontSize:isWide?26:20,fontWeight:"700",color:C.textPrimary }}>Voz a Texto</div>
         <div style={{ ...S.card,minHeight:140,display:"flex",flexDirection:"column",gap:8 }}>
           <div style={{ fontSize:11,color:C.textMuted,fontWeight:"600" }}>TEXTO RECONOCIDO</div>
-          {transcript
-            ? <p style={{ fontSize:15,color:C.textPrimary,lineHeight:1.7,margin:0 }}>{transcript}</p>
-            : <p style={{ fontSize:13,color:C.textMuted,fontStyle:"italic",margin:0 }}>El texto aparecerá aquí mientras hablas...</p>
-          }
+          {transcript ? <p style={{ fontSize:15,color:C.textPrimary,lineHeight:1.7,margin:0 }}>{transcript}</p> : <p style={{ fontSize:13,color:C.textMuted,fontStyle:"italic",margin:0 }}>El texto aparecerá aquí mientras hablas...</p>}
         </div>
         {transcript&&(
           <div style={{ display:"flex",gap:10 }}>
@@ -479,7 +465,6 @@ function Voice2Text({ onBack, bp }) {
   );
 }
 
-// ── SCANNER OCR ──
 function Scanner({ onBack, bp }) {
   const [stage,setStage]   = useState("idle");
   const [fontSize,setFontSize] = useState(15);
@@ -548,7 +533,6 @@ function Scanner({ onBack, bp }) {
   );
 }
 
-// ── OBJECTS ──
 function Objects({ onBack, bp }) {
   const [detecting,setDetecting] = useState(false);
   const [result,setResult]       = useState(null);
@@ -585,83 +569,79 @@ function Objects({ onBack, bp }) {
   );
 }
 
-// ── MÓDULO MULTIMEDIA ──
+// ── MULTIMEDIA CON YOUTUBE ──
 function Multimedia({ onBack, bp }) {
-  const [playing,setPlaying]     = useState(false);
-  const [showSub,setShowSub]     = useState(true);
-  const [progress2,setProgress2] = useState(30);
-  const [volume2,setVolume2]     = useState(80);
+  const [showSub,setShowSub] = useState(true);
   const isWide = bp!=="mobile";
-
-  const subtitles = "Este es un video de demostración. VisionAI proporciona subtítulos automáticos y descripción de audio para todo el contenido multimedia, haciendo los videos accesibles para personas con discapacidad auditiva o visual.";
-  const description = "Video descriptivo: Se muestra una interfaz de usuario accesible con botones grandes y alto contraste, diseñada para personas con discapacidad visual.";
-
-  // ID del video de YouTube (cambia esto por el ID real, la parte después de v= en la URL)
-  const youtubeId = "XXXXXXX";
+  const description = "Este video muestra contenido accesible. VisionAI proporciona subtítulos automáticos y descripción de audio para todo el contenido multimedia.";
 
   return (
     <div style={{ flex:1,display:"flex",padding:isWide?(bp==="desktop"?"32px 40px":"28px 24px"):"24px",gap:isWide?28:0,flexDirection:isWide?"row":"column",overflowY:"auto",maxWidth:bp==="desktop"?1000:undefined,width:"100%" }}>
       <div style={{ flex:1,display:"flex",flexDirection:"column",gap:14 }}>
         <button style={S.back} onClick={onBack}><ArrowLeft size={15}/> Volver</button>
         <div style={{ fontSize:isWide?26:20,fontWeight:"700",color:C.textPrimary }}>Multimedia Accesible</div>
+        <div style={{ fontSize:12,color:C.textMuted }}>Video con subtítulos y descripción de audio</div>
 
-        {/* Video player */}
-        <div style={{ borderRadius:"16px",background:"#0d1525",border:`2px solid ${C.border}`,overflow:"hidden" }}>
-          <div style={{ height:isWide?220:160,position:"relative",background:"#000" }}>
+        {/* ── VIDEO DE YOUTUBE ── */}
+        <div style={{ borderRadius:"16px",overflow:"hidden",border:`2px solid ${C.border}`,background:"#000" }}>
+          <div style={{ position:"relative",paddingBottom:"56.25%",height:0,overflow:"hidden" }}>
             <iframe
-              width="100%"
-              height="100%"
-              src={`https://www.youtube.com/embed/${youtubeId}`}
-              title="Video accesible"
-              frameBorder="0"
+              src="https://www.youtube.com/embed/QpJGi27KIhs?rel=0&modestbranding=1&cc_load_policy=1"
+              title="Video accesible VisionAI"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              style={{ display:"block" }}
+              style={{ position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none" }}
             />
           </div>
           {/* Subtítulos */}
-          {showSub&&<div style={{ background:"rgba(0,0,0,0.85)",padding:"12px 16px",borderTop:`1px solid ${C.border}` }}>
-            <div style={{ fontSize:11,color:C.amber,marginBottom:4,fontWeight:"600" }}>SUBTÍTULOS</div>
-            <div style={{ fontSize:13,color:"#fff",lineHeight:1.5 }}>{subtitles.slice(0,80)}...</div>
-          </div>}
+          {showSub&&(
+            <div style={{ background:"rgba(0,0,0,0.9)",padding:"12px 16px",borderTop:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:11,color:C.amber,marginBottom:4,fontWeight:"600" }}>SUBTÍTULOS ACTIVOS</div>
+              <div style={{ fontSize:13,color:"#fff",lineHeight:1.5 }}>Activa los subtítulos del video con el ícono CC en el reproductor de YouTube.</div>
+            </div>
+          )}
         </div>
 
-        {/* Descripción */}
+        {/* Descripción de audio */}
         <div style={{ ...S.card,background:"rgba(249,115,22,0.06)",border:`1px solid ${C.orange}33` }}>
           <div style={{ fontSize:11,color:C.orange,fontWeight:"600",marginBottom:8 }}>🔊 DESCRIPCIÓN DE AUDIO</div>
           <div style={{ fontSize:13,color:C.textSub,lineHeight:1.6 }}>{description}</div>
+          <button style={{ ...mkBtn(`linear-gradient(135deg,${C.orange},#ea580c)`),marginTop:12 }} onClick={()=>{const u=new SpeechSynthesisUtterance(description);u.lang="es-PE";window.speechSynthesis.speak(u);}}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><Volume2 size={15}/> Escuchar descripción</div>
+          </button>
         </div>
       </div>
 
       {/* Panel derecho */}
-      <div style={{ width:isWide?280:undefined,flexShrink:0,display:"flex",flexDirection:"column",gap:14,paddingTop:isWide?54:0 }}>
+      <div style={{ width:isWide?260:undefined,flexShrink:0,display:"flex",flexDirection:"column",gap:14,paddingTop:isWide?54:0 }}>
         <div style={S.card}>
           <div style={{ fontSize:12,color:C.textMuted,fontWeight:"600",marginBottom:12 }}>OPCIONES DE ACCESIBILIDAD</div>
+          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12 }}>
+            <div style={{ flex:1 }}><div style={{ fontSize:13,color:C.textPrimary,fontWeight:"600" }}>Mostrar subtítulos</div><div style={{ fontSize:11,color:C.textMuted }}>Panel debajo del video</div></div>
+            <button onClick={()=>setShowSub(!showSub)} style={{ width:40,height:22,borderRadius:11,background:showSub?C.amber:"#334155",border:"none",cursor:"pointer",position:"relative",transition:"background 0.2s" }}>
+              <div style={{ width:16,height:16,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:showSub?21:3,transition:"left 0.2s" }}/>
+            </button>
+          </div>
+        </div>
+
+        <div style={{ ...S.card,background:"rgba(14,165,233,0.06)",border:`1px solid ${C.blue}33` }}>
+          <div style={{ fontSize:11,color:C.blue,fontWeight:"600",marginBottom:10 }}>💡 CONSEJOS</div>
           {[
-            [showSub,setShowSub,C.amber,"Subtítulos automáticos","Texto en pantalla"],
-            [true,()=>{},C.blue,"Descripción de audio","Narración del contenido"],
-            [playing,()=>{},C.green,"Reproducción activa","Estado del reproductor"],
-          ].map(([val,fn,color,lbl,desc],i)=>(
-            <div key={i} style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12 }}>
-              <div style={{ flex:1 }}><div style={{ fontSize:13,color:C.textPrimary,fontWeight:"600" }}>{lbl}</div><div style={{ fontSize:11,color:C.textMuted }}>{desc}</div></div>
-              <button onClick={()=>typeof fn==="function"&&fn(!val)} style={{ width:40,height:22,borderRadius:11,background:val?color:"#334155",border:"none",cursor:"pointer",position:"relative",transition:"background 0.2s" }}>
-                <div style={{ width:16,height:16,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:val?21:3,transition:"left 0.2s" }}/>
-              </button>
-            </div>
-          ))}
+            "Toca CC en el video para subtítulos",
+            "Usa pantalla completa para mejor visión",
+            "Ajusta velocidad en el reproductor",
+            "El botón ⚙️ permite configurar calidad"
+          ].map((t,i)=><div key={i} style={{ fontSize:11,color:C.textMuted,marginBottom:6,paddingLeft:8,borderLeft:`2px solid ${C.blue}44` }}>{t}</div>)}
         </div>
-        <div style={{ display:"flex",gap:8 }}>
-          <button style={{ ...mkBtn(`linear-gradient(135deg,${C.orange},#ea580c)`),flex:1 }} onClick={()=>{const u=new SpeechSynthesisUtterance(description);u.lang="es-PE";window.speechSynthesis.speak(u);}}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}><Volume2 size={14}/> Describir</div>
-          </button>
-          <button style={{ ...mkBtnOut(),flex:1 }}><div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}><Subtitles size={14}/> Subtítulos</div></button>
-        </div>
+
+        <button style={mkBtn(`linear-gradient(135deg,${C.purple},#6d28d9)`)} onClick={()=>{const u=new SpeechSynthesisUtterance("Video cargado. Puedes reproducirlo, pausarlo y activar subtítulos con el botón CC.");u.lang="es-PE";window.speechSynthesis.speak(u);}}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><Volume2 size={15}/> Instrucciones de uso</div>
+        </button>
       </div>
     </div>
   );
 }
 
-// ── MÓDULO ACCESIBILIDAD ──
 function AccessModule({ onBack, settings, setSettings, bp }) {
   const toggle = (key) => setSettings(s=>({...s,[key]:!s[key]}));
   const isWide = bp!=="mobile";
@@ -682,8 +662,6 @@ function AccessModule({ onBack, settings, setSettings, bp }) {
         <button style={S.back} onClick={onBack}><ArrowLeft size={15}/> Volver</button>
         <div style={{ fontSize:isWide?26:20,fontWeight:"700",color:C.textPrimary }}>Accesibilidad</div>
         <div style={{ fontSize:12,color:C.textMuted }}>Personaliza la app para tus necesidades</div>
-
-        {/* Tamaño de letra */}
         <div style={S.card}>
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12 }}>
             <div><div style={{ fontSize:14,fontWeight:"600",color:C.textPrimary }}>Tamaño de letra</div><div style={{ fontSize:11,color:C.textMuted }}>Ajusta para mejor lectura</div></div>
@@ -695,14 +673,13 @@ function AccessModule({ onBack, settings, setSettings, bp }) {
             ))}
           </div>
         </div>
-
         <div style={{ display:"grid",gridTemplateColumns:isWide?"1fr 1fr":"1fr",gap:10 }}>
-          <Toggle label="Alto contraste"         desc="Mejora la visibilidad"           skey="highContrast" color={C.amber}  icon={<Sun size={18}/>}/>
-          <Toggle label="Lectura automática"     desc="Lee el contenido al abrirlo"     skey="autoRead"     color={C.blue}   icon={<Volume2 size={18}/>}/>
-          <Toggle label="Subtítulos automáticos" desc="Para videos y audio"             skey="subtitles"    color={C.green}  icon={<Subtitles size={18}/>}/>
-          <Toggle label="Modo simplificado"      desc="Interfaz con menos opciones"     skey="simpleMode"   color={C.purple} icon={<Brain size={18}/>}/>
-          <Toggle label="Navegación por voz"     desc="Comandos de voz globales"        skey="voiceNav"     color={C.red}    icon={<Mic size={18}/>}/>
-          <Toggle label="Letras legibles"        desc="Fuente optimizada para lectura"  skey="readableFont" color={C.teal}   icon={<BookOpen size={18}/>}/>
+          <Toggle label="Alto contraste"         desc="Mejora la visibilidad"          skey="highContrast" color={C.amber}  icon={<Sun size={18}/>}/>
+          <Toggle label="Lectura automática"     desc="Lee el contenido al abrirlo"    skey="autoRead"     color={C.blue}   icon={<Volume2 size={18}/>}/>
+          <Toggle label="Subtítulos automáticos" desc="Para videos y audio"            skey="subtitles"    color={C.green}  icon={<Subtitles size={18}/>}/>
+          <Toggle label="Modo simplificado"      desc="Interfaz con menos opciones"    skey="simpleMode"   color={C.purple} icon={<Brain size={18}/>}/>
+          <Toggle label="Navegación por voz"     desc="Comandos de voz globales"       skey="voiceNav"     color={C.red}    icon={<Mic size={18}/>}/>
+          <Toggle label="Letras legibles"        desc="Fuente optimizada para lectura" skey="readableFont" color={C.teal}   icon={<BookOpen size={18}/>}/>
         </div>
       </div>
       {isWide&&(
@@ -711,7 +688,7 @@ function AccessModule({ onBack, settings, setSettings, bp }) {
             <div style={{ fontSize:11,color:C.amber,fontWeight:"600",marginBottom:10 }}>♿ COMPATIBILIDAD</div>
             {["Lector de pantalla (NVDA, JAWS)","Navegación por teclado","Zoom del sistema operativo","Modo oscuro del sistema"].map((t,i)=><div key={i} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8 }}><Check size={12} color={C.green}/><span style={{ fontSize:12,color:C.textSub }}>{t}</span></div>)}
           </div>
-          <div style={{ ...S.card }}>
+          <div style={S.card}>
             <div style={{ fontSize:11,color:C.textMuted,fontWeight:"600",marginBottom:10 }}>CONFIGURACIÓN ACTIVA</div>
             {Object.entries(settings).filter(([k,v])=>v===true).length===0
               ? <div style={{ fontSize:12,color:C.textMuted,fontStyle:"italic" }}>Sin opciones activas</div>
@@ -724,38 +701,31 @@ function AccessModule({ onBack, settings, setSettings, bp }) {
   );
 }
 
-// ── MÓDULO AYUDA ──
 function Help({ onBack, bp }) {
   const [activeSection, setActiveSection] = useState(null);
   const isWide = bp!=="mobile";
-
   const sections = [
-    { id:"start", icon:"🚀", title:"¿Cómo empezar?", color:C.blue, steps:["Inicia sesión con tu correo o biometría","En el panel principal elige un módulo","Usa botones grandes para navegar","Activa la voz en cualquier momento"] },
-    { id:"reading", icon:"📖", title:"Lectura Accesible", color:C.green, steps:["Ingresa o pega el texto en el campo","Ajusta la velocidad de lectura","Presiona 'Leer texto' para escuchar","Usa Pausar y Reanudar cuando necesites"] },
-    { id:"voice", icon:"🎙️", title:"Voz a Texto", color:C.purple, steps:["Toca el micrófono grande","Habla claramente en español","El texto aparece automáticamente","Toca 'Confirmar' para guardar"] },
-    { id:"scanner", icon:"📷", title:"Escanear Texto", color:C.teal, steps:["Activa la cámara con el botón","Apunta al texto que deseas leer","Presiona 'Escanear ahora'","El texto se lee automáticamente"] },
-    { id:"access", icon:"⚙️", title:"Accesibilidad", color:C.amber, steps:["Ve a Accesibilidad en el menú","Activa Alto contraste si lo necesitas","Ajusta el tamaño de letra","Activa el Modo simplificado si prefieres"] },
-    { id:"voice_cmd", icon:"🔊", title:"Comandos de Voz", color:C.orange, steps:['"Abrir lectura" → módulo de lectura','"Activar micrófono" → voz a texto','"Ir a ayuda" → esta pantalla','"Cambiar contraste" → activa contraste'] },
+    { id:"start",    icon:"🚀", title:"¿Cómo empezar?",      color:C.blue,   steps:["Inicia sesión con tu correo o biometría","En el panel principal elige un módulo","Usa botones grandes para navegar","Activa la voz en cualquier momento"] },
+    { id:"reading",  icon:"📖", title:"Lectura Accesible",    color:C.green,  steps:["Ingresa o pega el texto en el campo","Ajusta la velocidad de lectura","Presiona Leer texto para escuchar","Usa Pausar y Reanudar cuando necesites"] },
+    { id:"voice",    icon:"🎙️", title:"Voz a Texto",          color:C.purple, steps:["Toca el micrófono grande","Habla claramente en español","El texto aparece automáticamente","Toca Confirmar para guardar"] },
+    { id:"scanner",  icon:"📷", title:"Escanear Texto",       color:C.teal,   steps:["Activa la cámara con el botón","Apunta al texto que deseas leer","Presiona Escanear ahora","El texto se lee automáticamente"] },
+    { id:"media",    icon:"▶️", title:"Multimedia",           color:C.orange, steps:["Abre el módulo Multimedia","El video de YouTube carga automáticamente","Activa CC para subtítulos en el video","Toca Escuchar descripción para narración"] },
+    { id:"access",   icon:"⚙️", title:"Accesibilidad",        color:C.amber,  steps:["Ve a Accesibilidad en el menú","Activa Alto contraste si lo necesitas","Ajusta el tamaño de letra","Activa el Modo simplificado si prefieres"] },
   ];
-
-  const readSection = (s) => {
-    const text = s.title + ". " + s.steps.join(". ");
-    const u = new SpeechSynthesisUtterance(text); u.lang="es-PE"; window.speechSynthesis.speak(u);
-  };
+  const readSection = (s) => { const u=new SpeechSynthesisUtterance(s.title+". "+s.steps.join(". ")); u.lang="es-PE"; window.speechSynthesis.speak(u); };
 
   return (
     <div style={{ flex:1,display:"flex",padding:isWide?(bp==="desktop"?"32px 40px":"28px 24px"):"24px",gap:isWide?28:0,flexDirection:isWide?"row":"column",overflowY:"auto",maxWidth:bp==="desktop"?1100:undefined,width:"100%" }}>
       <div style={{ flex:1,display:"flex",flexDirection:"column",gap:14 }}>
         <button style={S.back} onClick={onBack}><ArrowLeft size={15}/> Volver</button>
         <div style={{ fontSize:isWide?26:20,fontWeight:"700",color:C.textPrimary }}>Ayuda</div>
-        <div style={{ fontSize:12,color:C.textMuted }}>Guía rápida de uso · Toca cualquier sección para ver los pasos</div>
-
+        <div style={{ fontSize:12,color:C.textMuted }}>Guía rápida · Toca una sección para ver los pasos</div>
         <div style={{ display:"grid",gridTemplateColumns:isWide?"1fr 1fr":"1fr",gap:10 }}>
           {sections.map(s=>(
             <div key={s.id}>
               <button onClick={()=>setActiveSection(activeSection===s.id?null:s.id)}
-                style={{ width:"100%",padding:"16px",borderRadius:"14px",background:activeSection===s.id?`${s.color}12`:C.surface,border:`1.5px solid ${activeSection===s.id?s.color:C.border}`,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left",transition:"all 0.2s" }}>
-                <div style={{ width:42,height:42,borderRadius:"12px",background:`${s.color}18`,border:`1px solid ${s.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{s.icon}</div>
+                style={{ width:"100%",padding:"16px",borderRadius:"14px",background:activeSection===s.id?`${s.color}12`:C.surface,border:`1.5px solid ${activeSection===s.id?s.color:C.border}`,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left" }}>
+                <div style={{ width:42,height:42,borderRadius:"12px",background:`${s.color}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{s.icon}</div>
                 <div style={{ flex:1 }}><div style={{ fontSize:14,fontWeight:"600",color:C.textPrimary }}>{s.title}</div><div style={{ fontSize:11,color:C.textMuted,marginTop:2 }}>{s.steps.length} pasos</div></div>
                 <div style={{ fontSize:18,color:C.textMuted,transform:activeSection===s.id?"rotate(90deg)":"none",transition:"transform 0.2s" }}>›</div>
               </button>
@@ -763,7 +733,7 @@ function Help({ onBack, bp }) {
                 <div style={{ background:`${s.color}08`,border:`1px solid ${s.color}22`,borderRadius:"0 0 14px 14px",padding:"14px 16px",marginTop:-2 }}>
                   {s.steps.map((step,i)=>(
                     <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:10,marginBottom:10 }}>
-                      <div style={{ width:22,height:22,borderRadius:"50%",background:`${s.color}18`,border:`1px solid ${s.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:s.color,flexShrink:0,fontWeight:"700",marginTop:1 }}>{i+1}</div>
+                      <div style={{ width:22,height:22,borderRadius:"50%",background:`${s.color}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:s.color,flexShrink:0,fontWeight:"700",marginTop:1 }}>{i+1}</div>
                       <span style={{ fontSize:13,color:C.textSub,lineHeight:1.5 }}>{step}</span>
                     </div>
                   ))}
@@ -776,19 +746,18 @@ function Help({ onBack, bp }) {
           ))}
         </div>
       </div>
-
       {isWide&&(
         <div style={{ width:260,flexShrink:0,display:"flex",flexDirection:"column",gap:14,paddingTop:54 }}>
           <div style={{ ...S.card,background:"rgba(236,72,153,0.06)",border:`1px solid ${C.pink}33` }}>
             <div style={{ fontSize:11,color:C.pink,fontWeight:"600",marginBottom:10 }}>📞 SOPORTE</div>
-            <div style={{ fontSize:12,color:C.textMuted,lineHeight:1.6,marginBottom:12 }}>¿Necesitas más ayuda? Di "Ayuda" en cualquier pantalla o usa los comandos de voz.</div>
-            <button style={mkBtn(`linear-gradient(135deg,${C.pink},#db2777)`)} onClick={()=>{const u=new SpeechSynthesisUtterance("Bienvenido a la guía de ayuda de VisionAI. Selecciona una sección para escuchar las instrucciones.");u.lang="es-PE";window.speechSynthesis.speak(u);}}>
+            <div style={{ fontSize:12,color:C.textMuted,lineHeight:1.6,marginBottom:12 }}>¿Necesitas más ayuda? Di "Ayuda" en cualquier pantalla.</div>
+            <button style={mkBtn(`linear-gradient(135deg,${C.pink},#db2777)`)} onClick={()=>{const u=new SpeechSynthesisUtterance("Bienvenido a la guía de VisionAI. Selecciona una sección.");u.lang="es-PE";window.speechSynthesis.speak(u);}}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}><Volume2 size={14}/> Escuchar guía</div>
             </button>
           </div>
           <div style={S.card}>
             <div style={{ fontSize:11,color:C.textMuted,fontWeight:"600",marginBottom:10 }}>⌨️ ATAJOS DE TECLADO</div>
-            {[["Tab","Navegar elementos"],["Enter","Seleccionar"],["Esc","Volver / Cerrar"],["Space","Pausar / Reanudar"]].map(([k,v])=>(
+            {[["Tab","Navegar"],["Enter","Seleccionar"],["Esc","Volver"],["Space","Pausar"]].map(([k,v])=>(
               <div key={k} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8 }}>
                 <span style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:"6px",padding:"2px 8px",fontSize:11,color:C.blue,fontWeight:"700",flexShrink:0 }}>{k}</span>
                 <span style={{ fontSize:11,color:C.textMuted }}>{v}</span>
@@ -801,9 +770,6 @@ function Help({ onBack, bp }) {
   );
 }
 
-// ══════════════════════════════════════════════
-// APP ROOT
-// ══════════════════════════════════════════════
 const defaultSettings = { fontSize:15, highContrast:false, autoRead:false, subtitles:false, simpleMode:false, voiceNav:false, readableFont:false };
 
 export default function App() {
